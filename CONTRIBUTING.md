@@ -313,3 +313,7 @@ Treat Dependabot PRs like any other change: confirm CI is green, skim the change
 ## Security
 
 If you discover a security vulnerability, please review our [Security Policy](SECURITY.md) for responsible disclosure guidelines. Do not open public issues for security concerns.
+
+## Governance
+
+Project roles, decision-making processes, and the path to becoming a maintainer are described in [docs/GOVERNANCE.md](docs/GOVERNANCE.md).
