@@ -6,10 +6,12 @@ import { Feed } from "../components/Feed";
 import { Post } from "../components/PostCard";
 import { CreatePost } from "../components/CreatePost";
 import { useFollowingFeed } from "../hooks/useFollowingFeed";
+import { TipModal } from "../components/TipModal";
 
 export default function FeedPage() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set());
+  const [tippingPost, setTippingPost] = useState<{ id: number; author: string } | null>(null);
   const { posts, loading, error, hasMore, loadMore } = useFollowingFeed(walletAddress);
 
   useEffect(() => {
@@ -44,9 +46,11 @@ export default function FeedPage() {
     // TODO: Call contract to like post
   };
 
-  const handleTip = async (postId: number) => {
-    // TODO: Call contract to tip post
-    alert(`Tip functionality for post ${postId} - Connect wallet to tip`);
+  const handleTip = (postId: number) => {
+    const post = posts.find((p) => p.id === postId);
+    if (post) {
+      setTippingPost({ id: post.id, author: post.username || post.author });
+    }
   };
 
   const handleConnectWallet = async () => {
@@ -88,7 +92,7 @@ export default function FeedPage() {
     <main style={styles.main}>
       <header style={styles.header}>
         <h1 style={styles.title}>Following Feed</h1>
-        <Link href="/new" style={styles.newPostButton}>
+        <Link href="/new" style={styles.newPostButton} aria-label="Create new post">
           + New Post
         </Link>
       </header>
@@ -126,12 +130,19 @@ export default function FeedPage() {
 
         {posts.length === 0 && !loading && !error && (
           <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>👥</div>
+            <div style={styles.emptyIcon} aria-hidden="true">👥</div>
             <h3 style={styles.emptyTitle}>No posts yet</h3>
             <p style={styles.emptyText}>
               Follow some accounts to see their posts here
             </p>
           </div>
+        )}
+        {tippingPost && (
+          <TipModal
+            postId={tippingPost.id}
+            authorName={tippingPost.author}
+            onClose={() => setTippingPost(null)}
+          />
         )}
       </div>
     </main>
