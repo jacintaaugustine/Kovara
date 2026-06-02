@@ -161,10 +161,6 @@ export default function RootLayout() {
             options={{ href: null, headerShown: true, title: "Post" }}
           />
           <Tabs.Screen
-            name="post/new"
-            options={{ href: null, headerShown: true, title: "New Post" }}
-          />
-          <Tabs.Screen
             name="mini-app/[id]"
             options={{ href: null, headerShown: true, title: "Mini App" }}
           />
