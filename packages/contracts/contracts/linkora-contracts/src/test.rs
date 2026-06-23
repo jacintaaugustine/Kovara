@@ -1423,6 +1423,29 @@ fn test_get_followers_offset_beyond_list_length_returns_empty() {
 }
 
 #[test]
+fn test_get_followers_offset_equal_list_length_returns_empty() {
+    // offset equal to list length must return an empty vec
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(KovaraContract, ());
+    let client = KovaraContractClient::new(&env, &contract_id);
+
+    let alice = Address::generate(&env);
+    let bob = Address::generate(&env);
+    let carol = Address::generate(&env);
+
+    client.follow(&bob, &alice);
+    client.follow(&carol, &alice); // alice has 2 followers
+
+    let page = client.get_followers(&alice, &2, &10);
+    assert_eq!(
+        page.len(),
+        0,
+        "offset equal to list length must return empty vec"
+    );
+}
+
+#[test]
 fn test_get_followers_limit_50_returns_at_most_50() {
     // limit of 50 must return at most 50 results
     let env = Env::default();
@@ -1440,6 +1463,28 @@ fn test_get_followers_limit_50_returns_at_most_50() {
     let page = client.get_followers(&alice, &0, &50);
     assert!(page.len() <= 50, "limit=50 must return at most 50 results");
     assert_eq!(page.len(), 50);
+}
+
+#[test]
+fn test_get_followers_last_page_truncates_to_remaining_items() {
+    // request near the end must return only the remaining followers
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(KovaraContract, ());
+    let client = KovaraContractClient::new(&env, &contract_id);
+
+    let alice = Address::generate(&env);
+    let mut followers = soroban_sdk::vec![&env];
+    for _ in 0..12 {
+        let follower = Address::generate(&env);
+        followers.push_back(follower.clone());
+        client.follow(&follower, &alice);
+    }
+
+    let page = client.get_followers(&alice, &10, &10);
+    assert_eq!(page.len(), 2);
+    assert_eq!(page.get(0).unwrap(), followers.get(10).unwrap());
+    assert_eq!(page.get(1).unwrap(), followers.get(11).unwrap());
 }
 
 #[test]
