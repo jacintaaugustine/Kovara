@@ -906,6 +906,68 @@ fn test_pool_withdraw_exceeds_balance() {
 }
 
 #[test]
+#[should_panic(expected = "must be positive")]
+fn test_pool_withdraw_zero_amount_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, admin, _) = setup_contract(&env);
+
+    let pool_admin1 = Address::generate(&env);
+    let pool_admin2 = Address::generate(&env);
+    let other_user = Address::generate(&env);
+    let token = setup_token(&env, &pool_admin1);
+    StellarAssetClient::new(&env, &token).mint(&other_user, &1000);
+
+    let pool_id = symbol_short!("pool3");
+    client.create_pool(
+        &admin,
+        &pool_id,
+        &token,
+        &vec![&env, pool_admin1.clone(), pool_admin2.clone()],
+        &1,
+    );
+    client.pool_deposit(&other_user, &pool_id, &token, &100);
+
+    client.pool_withdraw(
+        &vec![&env, pool_admin1.clone(), pool_admin2.clone()],
+        &pool_id,
+        &0,
+        &other_user,
+    );
+}
+
+#[test]
+#[should_panic(expected = "must be positive")]
+fn test_pool_withdraw_negative_amount_rejected() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, admin, _) = setup_contract(&env);
+
+    let pool_admin1 = Address::generate(&env);
+    let pool_admin2 = Address::generate(&env);
+    let other_user = Address::generate(&env);
+    let token = setup_token(&env, &pool_admin1);
+    StellarAssetClient::new(&env, &token).mint(&other_user, &1000);
+
+    let pool_id = symbol_short!("pool3");
+    client.create_pool(
+        &admin,
+        &pool_id,
+        &token,
+        &vec![&env, pool_admin1.clone(), pool_admin2.clone()],
+        &1,
+    );
+    client.pool_deposit(&other_user, &pool_id, &token, &100);
+
+    client.pool_withdraw(
+        &vec![&env, pool_admin1.clone(), pool_admin2.clone()],
+        &pool_id,
+        &-50,
+        &other_user,
+    );
+}
+
+#[test]
 #[should_panic(expected = "wrong token for pool")]
 fn test_pool_deposit_wrong_token_rejected() {
     let env = Env::default();
