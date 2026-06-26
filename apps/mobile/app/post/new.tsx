@@ -156,7 +156,12 @@ export default function CreatePostScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Over-limit error */}
+          {/* Validation errors */}
+          {isEmpty && (
+            <Text style={styles.errorMsg} accessibilityRole="alert">
+              Post content cannot be empty.
+            </Text>
+          )}
           {overLimit && (
             <Text style={styles.errorMsg} accessibilityRole="alert">
               {`Post is ${Math.abs(remaining)} character${Math.abs(remaining) === 1 ? "" : "s"} over the limit.`}
