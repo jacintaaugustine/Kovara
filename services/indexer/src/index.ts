@@ -22,6 +22,7 @@
 import { Pool } from "pg";
 import { streamEvents, RawEvent } from "./stream";
 import { createApp } from "./api";
+import { runMigrations } from "./migrate";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -127,6 +128,7 @@ async function main(): Promise<void> {
   console.log(`[indexer] API server listening on ${HOST}:${PORT}`);
 
   await ensureEventsTable();
+  await runMigrations(pgPool);
 
   // Create and start API server
   const app = createApp(pgPool);
