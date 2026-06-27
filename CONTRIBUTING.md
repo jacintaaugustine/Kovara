@@ -65,6 +65,8 @@ pnpm build:contracts
 
 # 4. Run unit tests
 pnpm --filter contracts test
+
+For more details on running web and mobile tests, see the [Testing Guide](docs/testing.md).
 ```
 
 ### Running each workspace package
@@ -74,6 +76,9 @@ pnpm --filter contracts test
 | Contracts (build)  | `packages/contracts` | `pnpm build` or `pnpm build:contracts` from root |
 | Contracts (test)   | `packages/contracts` | `cargo test` or `pnpm --filter contracts test`   |
 | Contracts (format) | `packages/contracts` | `cargo fmt`                                      |
+| Web (test)         | `packages/web`       | `pnpm --filter web test`                         |
+| Web (E2E)          | `packages/web`       | `pnpm --filter web test:e2e`                     |
+| Mobile (test)      | `apps/mobile`        | `pnpm --filter @Kovara/mobile test`              |
 | Integration tests  | repo root            | `pnpm test:integration`                          |
 | Full lint          | repo root            | `pnpm lint`                                      |
 | Format all         | repo root            | `pnpm format`                                    |
@@ -136,9 +141,9 @@ Rules:
 
 Before opening a PR:
 
-- [ ] All tests pass locally (`cargo test` / `pnpm --filter contracts test`)
-- [ ] New behaviour is covered by tests
-- [ ] If a contract function was added or changed, the README API table is updated
+- [ ] All tests pass locally (contracts, web, and/or mobile)
+- [ ] New behaviour is covered by tests (unit and/or E2E)
+- [ ] If a contract function was added or changed, the storage layout, APIs, and the README API table are updated
 - [ ] Commit messages follow Conventional Commits format
 - [ ] Branch is up to date with `main`
 - [ ] PR is focused — one concern per PR
