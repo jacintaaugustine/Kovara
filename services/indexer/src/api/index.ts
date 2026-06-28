@@ -1,6 +1,7 @@
 import "express-async-errors";
 import express, { Request, Response, NextFunction } from "express";
-import rateLimit from "express-rate-limit";
+import cors from "cors";
+import rateLimit, { RateLimitRequestHandler } from "express-rate-limit";
 import { Database } from "../db";
 import { ApiErrorResponse, SearchResponse } from "./contracts";
 
@@ -15,6 +16,42 @@ import { createPoolsRouter } from "./routes/pools";
 
 // ── Runtime configuration (all values are env-overridable) ─────────────────
 
+let RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? "60000", 10);
+let RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX ?? "100", 10);
+
+/**
+ * Override rate-limit values at runtime (useful in tests).
+ */
+export function setRateLimit(windowMs: number, max: number): void {
+  RATE_LIMIT_WINDOW_MS = windowMs;
+  RATE_LIMIT_MAX = max;
+}
+
+// ── Rate limiter middleware factory ──────────────────────────────────────────
+
+function createLimiter(): RateLimitRequestHandler {
+  return rateLimit({
+    windowMs: RATE_LIMIT_WINDOW_MS,
+    max: RATE_LIMIT_MAX,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    keyGenerator: (req: Request): string => {
+      const forwarded = req.headers["x-forwarded-for"];
+      if (typeof forwarded === "string") {
+        return forwarded.split(",")[0].trim();
+      }
+      return req.ip ?? "unknown";
+    },
+    handler: (req: Request, res: Response): void => {
+      const retryAfter = Math.ceil(RATE_LIMIT_WINDOW_MS / 1000);
+      res.status(429).set("Retry-After", String(retryAfter)).json({
+        error: "Too many requests. Please retry after the indicated delay.",
+        code: "RATE_LIMIT_EXCEEDED",
+        retryAfterSeconds: retryAfter,
+      });
+    },
+  });
+}
 function parseEnvNumber(name: string, defaultValue: number): number {
   const value = process.env[name];
   if (!value) return defaultValue;
@@ -62,6 +99,10 @@ const apiLimiter = rateLimit({
 
 export function createApp(db: Database): express.Application {
   const app = express();
+
+  // ── CORS ──────────────────────────────────────────────────────────────────────
+  app.use(cors());
+
   app.use(express.json());
 
   if (TRUST_PROXY !== "") {
@@ -73,6 +114,7 @@ export function createApp(db: Database): express.Application {
   });
 
   // Apply rate limiting to all /api routes.
+  const apiLimiter = createLimiter();
   app.use("/api", apiLimiter);
 
   // ── Resource routes ────────────────────────────────────────────────────────
@@ -170,6 +212,16 @@ export function createApp(db: Database): express.Application {
         return;
       }
 
+      const { posts, total } = await db.searchPosts(body.query.trim(), limit, offset);
+      res.json({
+        posts: posts.map((p) => ({
+          id: String(p.id),
+          author: p.author,
+          content: p.content,
+          tip_total: String(p.tip_total),
+          like_count: String(p.like_count),
+          created_ledger: p.created_ledger,
+        })),
       if (typeof db.searchPosts !== "function") {
         res.status(500).json({ error: "search backend unavailable", code: "SEARCH_UNAVAILABLE" });
         return;
@@ -202,10 +254,9 @@ export function createApp(db: Database): express.Application {
   return app;
 }
 
-// Back-compat: export a pre-built app and limiter for tests that import them directly.
+// Back-compat: export a pre-built app for tests that import it directly.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const _stub = {} as any;
 export const app = createApp(_stub);
-export { apiLimiter };
 
 // Server is now started from the main index.ts entry point

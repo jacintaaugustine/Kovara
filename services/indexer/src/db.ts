@@ -58,6 +58,18 @@ export interface PoolRecord {
   threshold: number;
   created_ledger: number;
   updated_ledger: number;
+  token_name?: string;
+  token_symbol?: string;
+  token_decimals?: number;
+}
+
+export interface SearchedPost {
+  id: bigint;
+  author: string;
+  content: string;
+  tip_total: bigint;
+  like_count: bigint;
+  created_ledger: number;
 }
 
 export interface Database {
@@ -111,6 +123,19 @@ export interface Database {
     limit: number,
     offset: number
   ): Promise<{ following: string[]; total: number }>;
+
+  // Search
+  searchPosts(query: string, limit: number, offset: number): Promise<{
+    posts: SearchedPost[];
+    total: number;
+  }>;
+
+  // Token metadata
+  getTokenMetadata(token: string): Promise<{
+    name: string;
+    symbol: string;
+    decimals: number;
+  } | null>;
 }
 
 export class PostgresDatabase implements Database {
