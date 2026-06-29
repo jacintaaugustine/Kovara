@@ -1,4 +1,4 @@
-import { KovaraClient } from "../../packages/sdk/src/index";
+import { KovaraClient, KovaraError, NotFoundError, InsufficientBalanceError } from "../../packages/sdk/src/index";
 import { Keypair } from "@stellar/stellar-sdk";
 
 // ── Configuration ────────────────────────────────────────────────────────────
@@ -35,10 +35,12 @@ async function runNodeExample() {
       } else {
         console.log("   ✕ Profile not found. This is normal for a fresh mock keypair address.\n");
       }
-    } catch (err: any) {
+    } catch (err) {
       console.log("   ✕ Profile fetch simulated.");
+      // Expected error: NotFoundError when profile doesn't exist or contract not initialized
+      const error = err instanceof KovaraError ? err : new KovaraError(String(err));
       console.log(
-        `     Note: No deployed/initialized contract instance found at this address on Testnet: "${err.message}"\n`
+        `     Note: No deployed/initialized contract instance found at this address on Testnet: "${error.message}"\n`
       );
     }
 
@@ -47,10 +49,12 @@ async function runNodeExample() {
     try {
       const postCount = await client.getPostCount();
       console.log(`   ✓ Global post count: ${postCount} posts.\n`);
-    } catch (err: any) {
+    } catch (err) {
       console.log("   ✕ Post count fetch simulated.");
+      // Expected error: NotFoundError or KovaraError when contract not initialized
+      const error = err instanceof KovaraError ? err : new KovaraError(String(err));
       console.log(
-        `     Note: Could not fetch post count (uninitialized contract state): "${err.message}"\n`
+        `     Note: Could not fetch post count (uninitialized contract state): "${error.message}"\n`
       );
     }
 
@@ -73,15 +77,19 @@ async function runNodeExample() {
       console.log(`   Transaction Hash: ${postResult.txHash}`);
       console.log(`   Post ID: ${postResult.postId}`);
       console.log(`   Ledger Index: ${postResult.ledger}`);
-    } catch (txErr: any) {
+    } catch (txErr) {
       console.log("   ✕ Post transaction simulation completed.");
+      // Expected error: InsufficientBalanceError when mock keypair lacks XLM for gas fees
+      const error = txErr instanceof KovaraError ? txErr : new KovaraError(String(txErr));
       console.log("     Note: Since the mock keypair does not have funded XLM to pay gas fees,");
-      console.log(`     the execution failed as expected: "${txErr.message}"\n`);
+      console.log(`     the execution failed as expected: "${error.message}"\n`);
     }
 
     console.log("=== Node.js Example Execution Completed Successfully ===");
-  } catch (err: any) {
-    console.error("✕ Kovara SDK Runtime Error:", err.message);
+  } catch (err) {
+    // Catch-all for unexpected SDK errors
+    const error = err instanceof KovaraError ? err : new KovaraError(String(err));
+    console.error("✕ Kovara SDK Runtime Error:", error.message);
     process.exit(1);
   }
 }
